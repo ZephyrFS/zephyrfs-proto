@@ -1,10 +1,10 @@
-  # Generated code
-  /gen/
-  *.pb.go
-  *_pb2.py
-  *.pb.h
-  *.pb.cc
+# Generated code
+/gen/
+*.pb.go
+*_pb2.py
+*.pb.h
+*.pb.cc
 
-  # IDE
-  .vscode/
-  .idea/
+# IDE
+.vscode/
+.idea/
