@@ -1,0 +1,191 @@
+syntax = "proto3";
+
+package zephyrfs.coordinator;
+
+option go_package = "github.com/ZephyrFS/zephyrfs-proto/gen/go/coordinator";
+
+// Coordinator service for peer discovery and metadata management
+service CoordinatorService {
+  // Node registration and discovery
+  rpc RegisterNode(RegisterNodeRequest) returns (RegisterNodeResponse);
+  rpc UnregisterNode(UnregisterNodeRequest) returns (UnregisterNodeResponse);
+  rpc GetActiveNodes(GetActiveNodesRequest) returns (GetActiveNodesResponse);
+  rpc NodeHeartbeat(NodeHeartbeatRequest) returns (NodeHeartbeatResponse);
+  
+  // File and chunk coordination
+  rpc RegisterFile(RegisterFileRequest) returns (RegisterFileResponse);
+  rpc GetFileInfo(GetFileInfoRequest) returns (GetFileInfoResponse);
+  rpc UpdateChunkLocations(UpdateChunkLocationsRequest) returns (UpdateChunkLocationsResponse);
+  rpc FindChunkLocations(FindChunkLocationsRequest) returns (FindChunkLocationsResponse);
+  
+  // Network health and monitoring
+  rpc GetNetworkStatus(GetNetworkStatusRequest) returns (GetNetworkStatusResponse);
+}
+
+// Node management messages
+message RegisterNodeRequest {
+  string node_id = 1;
+  repeated string addresses = 2;
+  int64 storage_capacity = 3;
+  map<string, string> capabilities = 4;
+}
+
+message RegisterNodeResponse {
+  bool success = 1;
+  string message = 2;
+  string assigned_node_id = 3;
+  repeated string bootstrap_peers = 4;
+}
+
+message UnregisterNodeRequest {
+  string node_id = 1;
+  string reason = 2;
+}
+
+message UnregisterNodeResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetActiveNodesRequest {
+  int32 limit = 1;
+  repeated string exclude_nodes = 2;
+}
+
+message GetActiveNodesResponse {
+  repeated NodeStatus nodes = 1;
+  int32 total_nodes = 2;
+}
+
+message NodeHeartbeatRequest {
+  string node_id = 1;
+  NodeStats stats = 2;
+}
+
+message NodeHeartbeatResponse {
+  bool success = 1;
+  string message = 2;
+  repeated string tasks = 3;
+}
+
+// File coordination messages
+message RegisterFileRequest {
+  string file_id = 1;
+  string file_name = 2;
+  int64 file_size = 3;
+  string file_hash = 4;
+  repeated ChunkMetadata chunks = 5;
+  string owner_node_id = 6;
+}
+
+message RegisterFileResponse {
+  bool success = 1;
+  string message = 2;
+  repeated ChunkPlacement chunk_placements = 3;
+}
+
+message GetFileInfoRequest {
+  string file_id = 1;
+}
+
+message GetFileInfoResponse {
+  bool success = 1;
+  string message = 2;
+  FileRecord file_info = 3;
+}
+
+message UpdateChunkLocationsRequest {
+  string chunk_id = 1;
+  repeated string node_ids = 2;
+  string operation = 3; // "add" or "remove"
+}
+
+message UpdateChunkLocationsResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message FindChunkLocationsRequest {
+  string chunk_id = 1;
+  int32 preferred_count = 2;
+}
+
+message FindChunkLocationsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated string node_ids = 3;
+  repeated string node_addresses = 4;
+}
+
+// Network monitoring messages
+message GetNetworkStatusRequest {}
+
+message GetNetworkStatusResponse {
+  NetworkStats network_stats = 1;
+  repeated NodeStatus active_nodes = 2;
+  int64 timestamp = 3;
+}
+
+// Data structures
+message NodeStatus {
+  string node_id = 1;
+  repeated string addresses = 2;
+  NodeStats stats = 3;
+  int64 last_heartbeat = 4;
+  string status = 5; // "active", "inactive", "maintenance"
+}
+
+message NodeStats {
+  int64 storage_used = 1;
+  int64 storage_available = 2;
+  int64 chunks_stored = 3;
+  int64 bandwidth_up = 4;
+  int64 bandwidth_down = 5;
+  double cpu_usage = 6;
+  double memory_usage = 7;
+  int64 uptime_seconds = 8;
+}
+
+message ChunkMetadata {
+  string chunk_id = 1;
+  string hash = 2;
+  int64 size = 3;
+  int32 index = 4;
+}
+
+message ChunkPlacement {
+  string chunk_id = 1;
+  repeated string target_nodes = 2;
+  int32 replication_factor = 3;
+}
+
+message FileRecord {
+  string file_id = 1;
+  string file_name = 2;
+  int64 file_size = 3;
+  string file_hash = 4;
+  repeated ChunkRecord chunks = 5;
+  string owner_node_id = 6;
+  int64 created_at = 7;
+  int64 last_accessed = 8;
+}
+
+message ChunkRecord {
+  string chunk_id = 1;
+  string hash = 2;
+  int64 size = 3;
+  int32 index = 4;
+  repeated string stored_at_nodes = 5;
+  int32 replication_count = 6;
+}
+
+message NetworkStats {
+  int32 total_nodes = 1;
+  int32 active_nodes = 2;
+  int64 total_storage_capacity = 3;
+  int64 total_storage_used = 4;
+  int64 total_files = 5;
+  int64 total_chunks = 6;
+  double average_node_uptime = 7;
+  int64 network_uptime_seconds = 8;
+}
