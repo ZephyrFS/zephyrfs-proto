@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package zephyrfs.security;
+
+option go_package = "github.com/ZephyrFS/zephyrfs-proto/gen/go/security";
+
+// Security service for encryption and capability management
+service SecurityService {
+  // Capability-based access control
+  rpc ValidateCapability(ValidateCapabilityRequest) returns (ValidateCapabilityResponse);
+  rpc GenerateCapability(GenerateCapabilityRequest) returns (GenerateCapabilityResponse);
+  rpc RevokeCapability(RevokeCapabilityRequest) returns (RevokeCapabilityResponse);
+
+  // Proof-of-storage challenges
+  rpc IssueChallenge(IssueChallengeRequest) returns (IssueChallengeResponse);
+  rpc SubmitProof(SubmitProofRequest) returns (SubmitProofResponse);
+
+  // Trust and reputation
+  rpc UpdateReputation(UpdateReputationRequest) returns (UpdateReputationResponse);
+  rpc GetReputation(GetReputationRequest) returns (GetReputationResponse);
+}
+
+// Capability management messages
+message ValidateCapabilityRequest {
+  string capability_token = 1;
+  string resource_id = 2;
+  string operation = 3; // "read", "write", "share", "delete"
+}
+
+message ValidateCapabilityResponse {
+  bool valid = 1;
+  string message = 2;
+  CapabilityInfo capability_info = 3;
+}
+
+message GenerateCapabilityRequest {
+  string resource_id = 1;
+  repeated string permissions = 2;
+  int64 expires_at = 3; // Unix timestamp, 0 for no expiration
+  string issuer_node_id = 4;
+}
+
+message GenerateCapabilityResponse {
+  bool success = 1;
+  string message = 2;
+  string capability_token = 3;
+  CapabilityInfo capability_info = 4;
+}
+
+message RevokeCapabilityRequest {
+  string capability_token = 1;
+  string reason = 2;
+}
+
+message RevokeCapabilityResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Proof-of-storage messages
+message IssueChallengeRequest {
+  string node_id = 1;
+  string chunk_id = 2;
+  bytes challenge_data = 3;
+  int64 expires_at = 4;
+}
+
+message IssueChallengeResponse {
+  bool success = 1;
+  string message = 2;
+  string challenge_id = 3;
+}
+
+message SubmitProofRequest {
+  string challenge_id = 1;
+  string node_id = 2;
+  bytes proof_data = 3;
+  string merkle_root = 4;
+  repeated bytes merkle_path = 5;
+}
+
+message SubmitProofResponse {
+  bool valid = 1;
+  string message = 2;
+  double reputation_delta = 3;
+}
+
+// Reputation management messages
+message UpdateReputationRequest {
+  string node_id = 1;
+  double score_delta = 2;
+  string event_type = 3; // "storage_success", "storage_failure", "audit_pass", "audit_fail"
+  string evidence = 4;
+}
+
+message UpdateReputationResponse {
+  bool success = 1;
+  string message = 2;
+  double new_score = 3;
+}
+
+message GetReputationRequest {
+  string node_id = 1;
+  bool include_history = 2;
+}
+
+message GetReputationResponse {
+  bool success = 1;
+  string message = 2;
+  ReputationInfo reputation = 3;
+}
+
+// Data structures
+message CapabilityInfo {
+  string capability_id = 1;
+  string resource_id = 2;
+  repeated string permissions = 3;
+  int64 issued_at = 4;
+  int64 expires_at = 5;
+  string issuer_node_id = 6;
+  bool revoked = 7;
+  int32 usage_count = 8;
+}
+
+message ReputationInfo {
+  string node_id = 1;
+  double current_score = 2;
+  int64 last_updated = 3;
+  repeated ReputationEvent history = 4;
+  ReputationStats stats = 5;
+}
+
+message ReputationEvent {
+  int64 timestamp = 1;
+  string event_type = 2;
+  double score_delta = 3;
+  string details = 4;
+}
+
+message ReputationStats {
+  int32 total_challenges = 1;
+  int32 successful_challenges = 2;
+  int32 failed_challenges = 3;
+  double uptime_percentage = 4;
+  int64 storage_provided_bytes = 5;
+  int64 data_served_bytes = 6;
+}
